@@ -1,6 +1,8 @@
 package com.javarush.jira.common.internal.config;
 
 import com.javarush.jira.login.AuthUser;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -13,15 +15,19 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.context.request.WebRequestInterceptor;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.handler.WebRequestHandlerInterceptorAdapter;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.mvc.UrlFilenameViewController;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Properties;
 
 //@EnableWebMvc : http://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-spring-mvc-auto-configuration
@@ -55,8 +61,19 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // Логирование параметра "lang"
+        registry.addInterceptor(new HandlerInterceptor() {
+            @Override
+            public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+                log.info("Received request with lang parameter: {}", request.getParameter("lang"));
+                return true;
+            }
+        });
+
         registry.addInterceptor(authInterceptor).excludePathPatterns("/api/**");
+        registry.addInterceptor(localeChangeInterceptor());
     }
+
 
     //  http://www.codejava.net/frameworks/spring/spring-mvc-url-based-view-resolution-with-urlfilenameviewcontroller-example
     @Bean
@@ -94,5 +111,21 @@ public class MvcConfig implements WebMvcConfigurer {
                 .setConnectTimeout(Duration.ofSeconds(10))
                 .setReadTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        SessionLocaleResolver sessionLocaleResolver = new SessionLocaleResolver();
+        sessionLocaleResolver.setDefaultLocale(Locale.US);
+        return sessionLocaleResolver;
+    }
+
+
+    @Bean
+    public LocaleChangeInterceptor localeChangeInterceptor() {
+        log.info("Creating LocaleChangeInterceptor");
+        LocaleChangeInterceptor localeChangeInterceptor = new LocaleChangeInterceptor();
+        localeChangeInterceptor.setParamName("lang");
+        return localeChangeInterceptor;
     }
 }
