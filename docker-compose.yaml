@@ -1,0 +1,50 @@
+version: '4.21.1'
+
+services:
+  jira:
+    image: jira-app-image:latest
+    container_name: jira
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-db
+      - nginx
+    env_file:
+      - secret_data.env
+
+  postgres-db:
+    image: postgres:latest
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    env_file:
+      - secret_data.env
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+
+  postgres-db-test:
+    image: postgres:latest
+    container_name: postgres-db-test
+    ports:
+      - "5433:5432"
+    env_file:
+      - secret_data.env
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pgdata-test:/var/lib/postgresql/data
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/nginx.conf
+
+networks:
+  backend:
+    driver: bridge
