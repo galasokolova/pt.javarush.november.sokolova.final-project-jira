@@ -1,8 +1,10 @@
-version: '4.21.1'
+version: '4.23.0'
 
 services:
   jira:
-    image: jira-app-image:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: jira
     ports:
       - "8080:8080"
@@ -23,6 +25,7 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d/
 
   postgres-db-test:
     image: postgres:latest
@@ -44,7 +47,3 @@ services:
       - "80:80"
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/nginx.conf
-
-networks:
-  backend:
-    driver: bridge
